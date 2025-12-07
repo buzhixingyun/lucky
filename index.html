@@ -75,7 +75,7 @@
             return urlParams.get('key') || API_KEY || localStorage.getItem('GEMINI_API_KEY');
         };
 
-        // Gitee 资源链接 (直接使用原链接，通过 img 标签的 referrerPolicy="no-referrer" 绕过防盗链)
+        // Gitee 资源链接 (直接使用原链接，代码中已通过 meta 标签全局绕过防盗链)
         const AVATAR_URL = "https://gitee.com/konatatata/material/raw/master/tx.png";
         const STATIC_BG_URL = "https://gitee.com/konatatata/material/raw/master/beijing.png";
         
@@ -227,7 +227,56 @@
         };
 
         // ==========================================
-        // 4. REACT COMPONENTS
+        // 4. CUSTOM HOOKS & UTILS
+        // ==========================================
+        
+        // 全局注入 Referrer Policy 防盗链绕过逻辑
+        const useReferrerGuard = () => {
+            React.useEffect(() => {
+                // 核心逻辑：动态添加 meta referrer 标签
+                // "no-referrer" 告诉浏览器：在这个页面发出的所有请求，绝对不要带上“来源”信息
+                // 这样 Gitee 服务器就会认为用户是直接访问图片的，从而不会拦截
+                let meta = document.querySelector('meta[name="referrer"]');
+                if (!meta) {
+                    meta = document.createElement('meta');
+                    meta.name = "referrer";
+                    meta.content = "no-referrer";
+                    document.head.appendChild(meta);
+                } else {
+                    meta.content = "no-referrer";
+                }
+            }, []);
+        };
+
+        // 安全图片组件：处理加载状态和防盗链属性
+        const SafeImage = ({ src, alt, className, ...props }) => {
+            const [isLoaded, setIsLoaded] = React.useState(false);
+            const [isError, setIsError] = React.useState(false);
+
+            return (
+                <div className={`relative overflow-hidden ${className}`}>
+                     {/* 占位符：加载中显示轻微骨架屏效果 */}
+                    {!isLoaded && !isError && (
+                        <div className="absolute inset-0 bg-gray-100 animate-pulse z-10" />
+                    )}
+                    <img 
+                        src={src} 
+                        alt={alt}
+                        // 确保样式占满容器，配合父级控制
+                        className={`w-full h-full object-cover transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        // 双重保险：标签级防盗链 + 全局 meta
+                        referrerPolicy="no-referrer" 
+                        loading="lazy"
+                        onLoad={() => setIsLoaded(true)}
+                        onError={() => setIsError(true)}
+                        {...props}
+                    />
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 5. REACT COMPONENTS
         // ==========================================
 
         const Navbar = ({ activeSection, scrollToSection }) => {
@@ -302,12 +351,10 @@
                     <div className="mb-8 md:mb-10 relative inline-block animate-fade-in group cursor-pointer" onClick={() => scrollToSection('about')}>
                         <div className="w-40 h-40 md:w-56 md:h-56 rounded-full p-2 bg-white shadow-[0_10px_40px_-10px_rgba(255,117,160,0.5)] mx-auto animate-float border-4 border-primary/20">
                             <div className="w-full h-full rounded-full overflow-hidden bg-white border-4 border-white relative">
-                                <img 
+                                <SafeImage 
                                     src={PERSONAL_INFO.avatar} 
                                     alt="Avatar" 
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-3"
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full transition-transform duration-700 group-hover:scale-110 group-hover:rotate-3"
                                 />
                                 <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             </div>
@@ -413,7 +460,7 @@
                                                     {isLoadingThisDemo ? <Icons.Loader2 /> : <Icons.ExternalLink />}
                                                 </button>
                                             </div>
-                                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                                            <SafeImage src={project.imageUrl} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                         </div>
                                         <div className="p-6 flex-1 flex flex-col">
                                             <h3 className="text-xl font-bold mb-2 text-text group-hover:text-primary transition-colors">{project.title}</h3>
@@ -512,12 +559,10 @@
                         <button id="chat-trigger" onClick={() => setIsOpen(true)} className="relative group cursor-pointer animate-float">
                             {hasUnread && <span className="absolute -top-1 -right-1 flex h-5 w-5 z-10"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-5 w-5 bg-primary text-[10px] text-white font-bold items-center justify-center border-2 border-white">!</span></span>}
                             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white shadow-[0_4px_20px_rgba(255,117,160,0.5)] overflow-hidden bg-white hover:scale-105 transition-transform duration-300">
-                                <img 
+                                <SafeImage 
                                     src={PERSONAL_INFO.avatar} 
                                     alt="Chat" 
                                     className="w-full h-full object-cover" 
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer"
                                 />
                             </div>
                         </button>
@@ -526,11 +571,9 @@
                         <div className="p-4 bg-gradient-to-r from-primary to-accent flex items-center justify-between shadow-md shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="bg-white p-1 rounded-full shadow-sm ring-2 ring-white/50"><div className="w-8 h-8 rounded-full overflow-hidden">
-                                    <img 
+                                    <SafeImage 
                                         src={PERSONAL_INFO.avatar} 
                                         className="w-full h-full object-cover" 
-                                        loading="lazy"
-                                        referrerPolicy="no-referrer"
                                     />
                                 </div></div>
                                 <div><h3 className="font-extrabold text-white text-base">泉酱 (AI)</h3><p className="text-[10px] text-white/90 font-bold bg-white/20 px-2 py-0.5 rounded-full inline-block">Online</p></div>
@@ -544,11 +587,9 @@
                             {messages.map((msg, i) => (
                                 <div key={i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary border-2 border-white shadow-md flex-shrink-0 overflow-hidden">
-                                        <img 
+                                        <SafeImage 
                                             src={PERSONAL_INFO.avatar} 
                                             className="w-full h-full object-cover" 
-                                            loading="lazy"
-                                            referrerPolicy="no-referrer"
                                         />
                                     </div>}
                                     <div className={`max-w-[85%] rounded-2xl p-3 text-sm font-medium shadow-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-br-none' : 'bg-white text-text border border-primary/10 rounded-bl-none'} ${msg.isError ? 'bg-red-50 text-red-500' : ''}`}>{msg.text}</div>
@@ -567,9 +608,35 @@
             );
         };
 
+        const BackgroundLayer = ({ bgImage }) => {
+            const [loaded, setLoaded] = React.useState(false);
+            
+            return (
+                <div className="fixed inset-0 -z-50 overflow-hidden bg-[#fff5f7]">
+                    <img 
+                        src={bgImage || STATIC_BG_URL} 
+                        alt="Background" 
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                        referrerPolicy="no-referrer"
+                        onLoad={() => setLoaded(true)}
+                        onError={(e) => console.error("Background load failed", e)}
+                    />
+                    <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at center, transparent 50%, rgba(255, 245, 247, 0.4) 80%, rgba(255, 245, 247, 0.95) 100%)' }} />
+                    <div className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply" style={{ backgroundImage: `radial-gradient(#ff75a0 2px, transparent 2px)`, backgroundSize: '30px 30px' }} />
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+                        <div className="absolute top-[5%] left-[5%] animate-float opacity-80"><Icons.Star className="w-12 h-12 text-[#fde047] animate-spin-slow" /></div>
+                        <div className="absolute bottom-[15%] left-[8%] animate-float opacity-70"><Icons.Heart className="w-16 h-16 text-[#ff75a0] animate-bounce-slow" /></div>
+                    </div>
+                </div>
+            )
+        };
+
         const App = () => {
             const [activeSection, setActiveSection] = React.useState('home');
             const [bgImage, setBgImage] = React.useState(null);
+
+            // 启用全局 Referrer 保护
+            useReferrerGuard();
 
             const scrollToSection = (id) => {
                 setActiveSection(id);
@@ -578,27 +645,7 @@
 
             return (
                 <div className="min-h-screen relative flex flex-col transition-all duration-700 font-sans overflow-x-hidden">
-                    <div className="fixed inset-0 -z-50 overflow-hidden bg-[#fff5f7]">
-                        {/* 
-                            修改：背景图由 div backgroundImage 改为 img 标签。
-                            原因：为了使用 referrerPolicy="no-referrer" 绕过 Gitee 防盗链，
-                            该属性只能用于 img/iframe/script 等标签，无法用于 CSS 背景图。
-                        */}
-                        <img 
-                            src={bgImage || STATIC_BG_URL} 
-                            alt="Background" 
-                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out" 
-                            referrerPolicy="no-referrer"
-                            loading="lazy" 
-                        />
-                        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at center, transparent 50%, rgba(255, 245, 247, 0.4) 80%, rgba(255, 245, 247, 0.95) 100%)' }} />
-                        <div className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply" style={{ backgroundImage: `radial-gradient(#ff75a0 2px, transparent 2px)`, backgroundSize: '30px 30px' }} />
-                        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-                            <div className="absolute top-[5%] left-[5%] animate-float opacity-80"><Icons.Star className="w-12 h-12 text-[#fde047] animate-spin-slow" /></div>
-                            <div className="absolute bottom-[15%] left-[8%] animate-float opacity-70"><Icons.Heart className="w-16 h-16 text-[#ff75a0] animate-bounce-slow" /></div>
-                        </div>
-                    </div>
-
+                    <BackgroundLayer bgImage={bgImage} />
                     <Navbar activeSection={activeSection} scrollToSection={scrollToSection} />
                     <main className="flex-grow w-full max-w-[100vw]">
                         <div id="home"><Hero scrollToSection={scrollToSection} /></div>
