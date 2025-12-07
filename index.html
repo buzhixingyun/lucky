@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (Direct CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -46,8 +46,7 @@
       }
     </script>
 
-    <!-- React & Babel via CDN -->
-    <!-- These allow React to run directly in the browser without a build step -->
+    <!-- React & Babel via CDN (Browser-based compilation) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -69,8 +68,6 @@
         // 1. CONFIGURATION (配置区)
         // ==========================================
         
-        // 注意：在 GitHub Pages 上，API Key 是公开可见的。
-        // 如果您担心额度被盗用，请在 Google AI Studio 设置 API Key 的 HTTP Referrer 限制。
         const API_KEY = ""; 
         
         const getApiKey = () => {
@@ -78,6 +75,7 @@
             return urlParams.get('key') || API_KEY || localStorage.getItem('GEMINI_API_KEY');
         };
 
+        // Gitee 资源链接 (直接使用原链接，通过 img 标签的 referrerPolicy="no-referrer" 绕过防盗链)
         const AVATAR_URL = "https://gitee.com/konatatata/material/raw/master/tx.png";
         const STATIC_BG_URL = "https://gitee.com/konatatata/material/raw/master/beijing.png";
         
@@ -106,15 +104,15 @@
         ];
 
         // ==========================================
-        // 2. ICONS (SVG 组件)
+        // 2. ICONS (SVG 图标组件)
         // ==========================================
-        
         const Icon = ({ path, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
                 <path d={path} />
             </svg>
         );
 
+        // Custom QQ Penguin Icon (SVG)
         const QQIcon = (props) => (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
             <path d="M12 2C7.5 2 4 5.5 4 10C4 11.5 4.5 12.8 5.2 14C4.5 14.5 3.5 15.5 3.5 15.5C3.5 15.5 3 17.5 5 19C5.5 19.5 7 20 8 20C9 21 10.5 21.5 12 21.5C13.5 21.5 15 21 16 20C17 20 18.5 19.5 19 19C21 17.5 20.5 15.5 20.5 15.5C20.5 15.5 19.5 14.5 18.8 14C19.5 12.8 20 11.5 20 10C20 5.5 16.5 2 12 2Z" fill="currentColor" fillOpacity="0.1" strokeWidth="0" />
@@ -132,7 +130,7 @@
             Menu: (props) => <Icon path="M4 6h16M4 12h16M4 18h16" {...props} />,
             X: (props) => <Icon path="M18 6 6 18M6 6l12 12" {...props} />,
             ArrowDown: (props) => <Icon path="M12 5v14M19 12l-7 7-7-7" {...props} />,
-            Sparkles: (props) => <Icon path="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" {...props} />,
+            Sparkles: (props) => <Icon path="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z" {...props} />,
             Github: (props) => <Icon path="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" {...props} />,
             Twitter: (props) => <Icon path="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-12.7 12.5S.2 5.3 7.8 4.5c2.1-.1 3.2.4 3.2.4l-.9-1.9s1-.9 3.2-1.9c0 0 1.2 2 1.5 2.8 1.4-.4 2.8-.8 2.8-.8L22 4Z" {...props} />, 
             Mail: (props) => <Icon path="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" {...props} />,
@@ -166,7 +164,7 @@
         ];
 
         // ==========================================
-        // 3. AI SERVICE (使用 REST API)
+        // 3. AI SERVICE (Direct REST API)
         // ==========================================
         const callGeminiChat = async (message, history) => {
             const apiKey = getApiKey();
@@ -304,7 +302,13 @@
                     <div className="mb-8 md:mb-10 relative inline-block animate-fade-in group cursor-pointer" onClick={() => scrollToSection('about')}>
                         <div className="w-40 h-40 md:w-56 md:h-56 rounded-full p-2 bg-white shadow-[0_10px_40px_-10px_rgba(255,117,160,0.5)] mx-auto animate-float border-4 border-primary/20">
                             <div className="w-full h-full rounded-full overflow-hidden bg-white border-4 border-white relative">
-                                <img src={PERSONAL_INFO.avatar} alt="Avatar" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-3" />
+                                <img 
+                                    src={PERSONAL_INFO.avatar} 
+                                    alt="Avatar" 
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-3"
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer"
+                                />
                                 <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             </div>
                         </div>
@@ -409,7 +413,7 @@
                                                     {isLoadingThisDemo ? <Icons.Loader2 /> : <Icons.ExternalLink />}
                                                 </button>
                                             </div>
-                                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
                                         </div>
                                         <div className="p-6 flex-1 flex flex-col">
                                             <h3 className="text-xl font-bold mb-2 text-text group-hover:text-primary transition-colors">{project.title}</h3>
@@ -508,14 +512,27 @@
                         <button id="chat-trigger" onClick={() => setIsOpen(true)} className="relative group cursor-pointer animate-float">
                             {hasUnread && <span className="absolute -top-1 -right-1 flex h-5 w-5 z-10"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-5 w-5 bg-primary text-[10px] text-white font-bold items-center justify-center border-2 border-white">!</span></span>}
                             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white shadow-[0_4px_20px_rgba(255,117,160,0.5)] overflow-hidden bg-white hover:scale-105 transition-transform duration-300">
-                                <img src={PERSONAL_INFO.avatar} alt="Chat" className="w-full h-full object-cover" />
+                                <img 
+                                    src={PERSONAL_INFO.avatar} 
+                                    alt="Chat" 
+                                    className="w-full h-full object-cover" 
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer"
+                                />
                             </div>
                         </button>
                     </div>
                     <div className={`fixed z-50 flex flex-col bg-white/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl overflow-hidden transition-all duration-300 bottom-0 left-0 right-0 w-full h-[85dvh] rounded-t-3xl sm:bottom-6 sm:right-6 sm:left-auto sm:w-[26rem] sm:h-[38rem] sm:rounded-3xl sm:origin-bottom-right ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-10 opacity-0 pointer-events-none'}`}>
                         <div className="p-4 bg-gradient-to-r from-primary to-accent flex items-center justify-between shadow-md shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="bg-white p-1 rounded-full shadow-sm ring-2 ring-white/50"><div className="w-8 h-8 rounded-full overflow-hidden"><img src={PERSONAL_INFO.avatar} className="w-full h-full object-cover" /></div></div>
+                                <div className="bg-white p-1 rounded-full shadow-sm ring-2 ring-white/50"><div className="w-8 h-8 rounded-full overflow-hidden">
+                                    <img 
+                                        src={PERSONAL_INFO.avatar} 
+                                        className="w-full h-full object-cover" 
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer"
+                                    />
+                                </div></div>
                                 <div><h3 className="font-extrabold text-white text-base">泉酱 (AI)</h3><p className="text-[10px] text-white/90 font-bold bg-white/20 px-2 py-0.5 rounded-full inline-block">Online</p></div>
                             </div>
                             <div className="flex items-center gap-1">
@@ -526,7 +543,14 @@
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin bg-white/50">
                             {messages.map((msg, i) => (
                                 <div key={i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary border-2 border-white shadow-md flex-shrink-0 overflow-hidden"><img src={PERSONAL_INFO.avatar} className="w-full h-full object-cover" /></div>}
+                                    {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary border-2 border-white shadow-md flex-shrink-0 overflow-hidden">
+                                        <img 
+                                            src={PERSONAL_INFO.avatar} 
+                                            className="w-full h-full object-cover" 
+                                            loading="lazy"
+                                            referrerPolicy="no-referrer"
+                                        />
+                                    </div>}
                                     <div className={`max-w-[85%] rounded-2xl p-3 text-sm font-medium shadow-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-br-none' : 'bg-white text-text border border-primary/10 rounded-bl-none'} ${msg.isError ? 'bg-red-50 text-red-500' : ''}`}>{msg.text}</div>
                                 </div>
                             ))}
@@ -555,7 +579,18 @@
             return (
                 <div className="min-h-screen relative flex flex-col transition-all duration-700 font-sans overflow-x-hidden">
                     <div className="fixed inset-0 -z-50 overflow-hidden bg-[#fff5f7]">
-                        <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out" style={{ backgroundImage: `url(${bgImage || STATIC_BG_URL})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} />
+                        {/* 
+                            修改：背景图由 div backgroundImage 改为 img 标签。
+                            原因：为了使用 referrerPolicy="no-referrer" 绕过 Gitee 防盗链，
+                            该属性只能用于 img/iframe/script 等标签，无法用于 CSS 背景图。
+                        */}
+                        <img 
+                            src={bgImage || STATIC_BG_URL} 
+                            alt="Background" 
+                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out" 
+                            referrerPolicy="no-referrer"
+                            loading="lazy" 
+                        />
                         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at center, transparent 50%, rgba(255, 245, 247, 0.4) 80%, rgba(255, 245, 247, 0.95) 100%)' }} />
                         <div className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply" style={{ backgroundImage: `radial-gradient(#ff75a0 2px, transparent 2px)`, backgroundSize: '30px 30px' }} />
                         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
