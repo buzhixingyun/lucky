@@ -28,15 +28,18 @@
             },
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out',
+              'fade-out': 'fadeOut 0.5s ease-in forwards',
               'slide-up': 'slideUp 0.5s ease-out',
               'bounce-slow': 'bounce 3s infinite',
               'float': 'float 6s ease-in-out infinite',
               'float-delayed': 'float 8s ease-in-out infinite',
               'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'spin-slow': 'spin 10s linear infinite',
+              'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
             },
             keyframes: {
               fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+              fadeOut: { '0%': { opacity: '1' }, '100%': { opacity: '0', visibility: 'hidden' } },
               slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
               float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-20px)' } },
               pulseGlow: { '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 5px #ff75a0)' }, '50%': { opacity: '.7', filter: 'drop-shadow(0 0 15px #ff75a0)' } }
@@ -56,7 +59,7 @@
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #ffcce0; border-radius: 4px; border: 2px solid #fff; }
       ::-webkit-scrollbar-thumb:hover { background: #ff75a0; }
-      body { background-color: transparent; color: #334155; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+      body { background-color: #fff5f7; color: #334155; overflow-x: hidden; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
       .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
@@ -75,10 +78,13 @@
             return urlParams.get('key') || API_KEY || localStorage.getItem('GEMINI_API_KEY');
         };
 
-        // Gitee 资源链接 (直接使用原链接，代码中已通过 meta 标签全局绕过防盗链)
+        // Gitee 资源链接
         const AVATAR_URL = "https://gitee.com/konatatata/material/raw/master/tx.png";
         const STATIC_BG_URL = "https://gitee.com/konatatata/material/raw/master/beijing.png";
         
+        // 关键资源列表，用于预加载
+        const CRITICAL_ASSETS = [AVATAR_URL, STATIC_BG_URL];
+
         const PERSONAL_INFO = {
             name: "小泉 (Xiaoquan)",
             title: "传说中的二次元切图仔",
@@ -233,9 +239,6 @@
         // 全局注入 Referrer Policy 防盗链绕过逻辑
         const useReferrerGuard = () => {
             React.useEffect(() => {
-                // 核心逻辑：动态添加 meta referrer 标签
-                // "no-referrer" 告诉浏览器：在这个页面发出的所有请求，绝对不要带上“来源”信息
-                // 这样 Gitee 服务器就会认为用户是直接访问图片的，从而不会拦截
                 let meta = document.querySelector('meta[name="referrer"]');
                 if (!meta) {
                     meta = document.createElement('meta');
@@ -248,6 +251,21 @@
             }, []);
         };
 
+        // 预加载单张图片函数 (支持缓存)
+        const preloadImage = (src) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                // 关键：在这里也设置 no-referrer，确保预加载的请求也能绕过防盗链
+                img.referrerPolicy = "no-referrer"; 
+                img.onload = () => resolve(true);
+                img.onerror = () => {
+                    console.warn(`[Preload] Failed: ${src}`);
+                    resolve(false); // 失败也不阻塞应用启动
+                };
+                img.src = src;
+            });
+        };
+
         // 安全图片组件：处理加载状态和防盗链属性
         const SafeImage = ({ src, alt, className, ...props }) => {
             const [isLoaded, setIsLoaded] = React.useState(false);
@@ -255,16 +273,13 @@
 
             return (
                 <div className={`relative overflow-hidden ${className}`}>
-                     {/* 占位符：加载中显示轻微骨架屏效果 */}
                     {!isLoaded && !isError && (
                         <div className="absolute inset-0 bg-gray-100 animate-pulse z-10" />
                     )}
                     <img 
                         src={src} 
                         alt={alt}
-                        // 确保样式占满容器，配合父级控制
                         className={`w-full h-full object-cover transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                        // 双重保险：标签级防盗链 + 全局 meta
                         referrerPolicy="no-referrer" 
                         loading="lazy"
                         onLoad={() => setIsLoaded(true)}
@@ -278,6 +293,51 @@
         // ==========================================
         // 5. REACT COMPONENTS
         // ==========================================
+
+        const Preloader = ({ onFinished }) => {
+            const [visible, setVisible] = React.useState(true);
+            const [fadeOut, setFadeOut] = React.useState(false);
+
+            React.useEffect(() => {
+                const startLoading = async () => {
+                    // 1. 等待所有关键图片加载完成
+                    await Promise.all([
+                        ...CRITICAL_ASSETS.map(url => preloadImage(url)),
+                        // 2. 至少展示 1.5 秒动画，防止闪屏
+                        new Promise(resolve => setTimeout(resolve, 1500))
+                    ]);
+                    
+                    // 3. 开始淡出动画
+                    setFadeOut(true);
+                    
+                    // 4. 动画结束后通知父组件卸载
+                    setTimeout(() => {
+                        setVisible(false);
+                        onFinished();
+                    }, 500); 
+                };
+
+                startLoading();
+            }, [onFinished]);
+
+            if (!visible) return null;
+
+            return (
+                <div className={`fixed inset-0 z-[100] bg-[#fff5f7] flex flex-col items-center justify-center transition-all duration-500 ${fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                    <div className="relative">
+                        <Icons.Heart className="w-20 h-20 text-primary animate-bounce-slow" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Icons.Sparkles className="w-10 h-10 text-accent animate-spin-slow" />
+                        </div>
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-12 h-2 bg-black/10 rounded-[100%] blur-sm animate-pulse" />
+                    </div>
+                    <div className="mt-8 flex flex-col items-center gap-2">
+                        <h2 className="text-xl font-bold text-primary animate-pulse">少女祈祷中...</h2>
+                        <p className="text-sm text-text/50 font-bold tracking-widest">LOADING RESOURCES</p>
+                    </div>
+                </div>
+            );
+        };
 
         const Navbar = ({ activeSection, scrollToSection }) => {
             const [isOpen, setIsOpen] = React.useState(false);
@@ -634,6 +694,7 @@
         const App = () => {
             const [activeSection, setActiveSection] = React.useState('home');
             const [bgImage, setBgImage] = React.useState(null);
+            const [isPreloading, setIsPreloading] = React.useState(true);
 
             // 启用全局 Referrer 保护
             useReferrerGuard();
@@ -645,18 +706,24 @@
 
             return (
                 <div className="min-h-screen relative flex flex-col transition-all duration-700 font-sans overflow-x-hidden">
-                    <BackgroundLayer bgImage={bgImage} />
-                    <Navbar activeSection={activeSection} scrollToSection={scrollToSection} />
-                    <main className="flex-grow w-full max-w-[100vw]">
-                        <div id="home"><Hero scrollToSection={scrollToSection} /></div>
-                        <div id="about"><About /></div>
-                        <div id="projects"><Projects /></div>
-                        <div id="contact"><Contact /></div>
-                    </main>
-                    <footer className="py-8 text-center text-text/80 text-sm mt-auto relative z-10 font-bold bg-white/30 backdrop-blur-sm">
-                        <p>© {new Date().getFullYear()} 小泉の窝.</p>
-                    </footer>
-                    <ChatWidget onSetBackground={setBgImage} />
+                    <Preloader onFinished={() => setIsPreloading(false)} />
+                    
+                    {!isPreloading && (
+                        <div className="animate-fade-in">
+                            <BackgroundLayer bgImage={bgImage} />
+                            <Navbar activeSection={activeSection} scrollToSection={scrollToSection} />
+                            <main className="flex-grow w-full max-w-[100vw]">
+                                <div id="home"><Hero scrollToSection={scrollToSection} /></div>
+                                <div id="about"><About /></div>
+                                <div id="projects"><Projects /></div>
+                                <div id="contact"><Contact /></div>
+                            </main>
+                            <footer className="py-8 text-center text-text/80 text-sm mt-auto relative z-10 font-bold bg-white/30 backdrop-blur-sm">
+                                <p>© {new Date().getFullYear()} 小泉の窝.</p>
+                            </footer>
+                            <ChatWidget onSetBackground={setBgImage} />
+                        </div>
+                    )}
                 </div>
             );
         };
